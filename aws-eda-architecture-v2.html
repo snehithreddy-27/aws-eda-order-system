@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AWS Event-Driven Architecture — Order System</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #0f1422;
+    --bg3: #141828;
+    --border: rgba(99,120,255,0.15);
+    --border2: rgba(99,120,255,0.3);
+    --purple: #6378ff;
+    --purple-light: #a0b0ff;
+    --teal: #00d4a0;
+    --teal-dim: rgba(0,212,160,0.15);
+    --coral: #ff6b6b;
+    --coral-dim: rgba(255,107,107,0.12);
+    --amber: #ffb347;
+    --amber-dim: rgba(255,179,71,0.12);
+    --text: #e8eaf0;
+    --text2: #8892b0;
+    --text3: #4a5568;
+    --success: #00d4a0;
+    --warning: #ffb347;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,120,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,120,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 0;
+    background: rgba(10,14,26,0.9);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--teal);
+    box-shadow: 0 0 8px var(--teal);
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .logo-text { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: var(--text2); text-transform: uppercase; }
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    color: var(--purple-light);
+    background: rgba(99,120,255,0.08);
+  }
+
+  /* HERO */
+  .hero { padding: 60px 0 40px; text-align: center; }
+  .hero h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 300;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .hero h1 span { color: var(--purple-light); font-weight: 600; }
+  .hero p { font-size: 15px; color: var(--text2); max-width: 500px; margin: 0 auto 32px; line-height: 1.7; }
+  .stats-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .stat-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    background: var(--bg2);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .stat-pill .val { color: var(--teal); font-weight: 600; }
+
+  /* CONTROLS */
+  .controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 32px 0;
+  }
+  .btn-fire {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 28px;
+    border-radius: 8px;
+    border: none;
+    background: var(--purple);
+    color: #fff;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-fire:hover { background: #7b8fff; transform: translateY(-1px); }
+  .btn-fire:active { transform: translateY(0); }
+  .btn-fire:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-fire .pulse-ring {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.8);
+  }
+  .btn-secondary {
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 11px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { background: var(--bg3); color: var(--text); }
+
+  /* ARCH DIAGRAM */
+  .diagram-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 24px;
+    margin: 0 0 24px;
+    overflow: hidden;
+  }
+  #arch-svg { display: block; width: 100%; max-width: 860px; margin: 0 auto; }
+
+  /* SVG nodes */
+  .sv-node { cursor: pointer; transition: filter 0.2s; }
+  .sv-node:hover { filter: brightness(1.15); }
+  .sv-active { filter: brightness(1.3) !important; }
+  @keyframes sv-pulse {
+    0%,100%{ filter: brightness(1.3) drop-shadow(0 0 8px currentColor); }
+    50%{ filter: brightness(1.6) drop-shadow(0 0 16px currentColor); }
+  }
+  .sv-pulsing { animation: sv-pulse 0.7s ease-in-out infinite; }
+  @keyframes dash-flow { from{ stroke-dashoffset: 30; } to{ stroke-dashoffset: 0; } }
+  .flowing { stroke-dasharray: 6 4; animation: dash-flow 0.5s linear infinite; }
+
+  /* LOG PANEL */
+  .log-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .log-header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .log-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text2);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .log-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+  .log-body { padding: 8px 0; min-height: 120px; max-height: 240px; overflow-y: auto; }
+  .log-entry {
+    padding: 5px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text2);
+    border-bottom: 1px solid rgba(99,120,255,0.05);
+    display: flex; gap: 12px; align-items: baseline;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-time { color: var(--text3); min-width: 70px; }
+  .log-msg { flex: 1; }
+  .log-entry.info .log-msg { color: var(--purple-light); }
+  .log-entry.success .log-msg { color: var(--teal); }
+  .log-entry.primary .log-msg { color: var(--text); }
+  .log-placeholder { color: var(--text3); font-style: italic; padding: 20px; text-align: center; font-size: 12px; font-family: var(--mono); }
+
+  /* RESOURCE TABLE */
+  .resource-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .section-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text2);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .resource-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    border-bottom: 1px solid rgba(99,120,255,0.05);
+    gap: 12px;
+  }
+  .resource-row:last-child { border-bottom: none; }
+  .res-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .res-icon.sns { background: rgba(0,212,160,0.12); color: var(--teal); }
+  .res-icon.sqs { background: rgba(255,107,107,0.12); color: var(--coral); }
+  .res-icon.lambda { background: rgba(99,120,255,0.12); color: var(--purple-light); }
+  .res-icon.iam { background: rgba(255,179,71,0.12); color: var(--amber); }
+  .res-name { font-size: 13px; font-weight: 500; min-width: 160px; }
+  .res-type { font-family: var(--mono); font-size: 11px; color: var(--text3); flex: 1; }
+  .res-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(0,212,160,0.1);
+    color: var(--teal);
+    border: 1px solid rgba(0,212,160,0.2);
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 0;
+    text-align: center;
+    color: var(--text3);
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+  footer a { color: var(--purple-light); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* TOOLTIP */
+  .tooltip-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,14,26,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .tooltip-overlay.show { display: flex; }
+  .tooltip-box {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 420px;
+    width: 90%;
+  }
+  .tooltip-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+  .tooltip-body { font-size: 14px; color: var(--text2); line-height: 1.7; margin-bottom: 16px; }
+  .tooltip-close {
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+  }
+  .tooltip-close:hover { background: var(--bg2); }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 24px; }
+    .res-type { display: none; }
+    .res-name { min-width: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <span class="logo-text">AWS Event-Driven Architecture</span>
+    </div>
+    <span class="badge">us-east-2 · Ohio</span>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <section class="hero">
+      <h1>Order System<br/><span>Event-Driven Architecture</span></h1>
+      <p>A fully decoupled order processing pipeline built on AWS SNS, SQS, and Lambda. One event triggers three independent consumers in parallel.</p>
+      <div class="stats-row">
+        <div class="stat-pill">Orders fired <span class="val" id="cnt-orders">0</span></div>
+        <div class="stat-pill">Events processed <span class="val" id="cnt-events">0</span></div>
+        <div class="stat-pill">Status <span class="val" id="sys-status">idle</span></div>
+      </div>
+    </section>
+
+    <div class="controls">
+      <button class="btn-fire" id="fire-btn" onclick="fireOrder()">
+        <span class="pulse-ring" id="pulse-ring"></span>
+        Fire order event
+      </button>
+      <button class="btn-secondary" onclick="clearAll()">Clear logs</button>
+    </div>
+
+    <div class="diagram-wrap">
+      <svg id="arch-svg" viewBox="0 0 860 420" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- YOUR APP -->
+        <g class="sv-node" id="node-app" onclick="showTip('Your App (Producer)','Your application is the event producer. When a customer places an order, it publishes a single JSON message to the SNS topic. It never talks to payment, email, or inventory directly — it just fires the event and moves on.')">
+          <rect x="305" y="20" width="250" height="64" rx="10" fill="rgba(99,120,255,0.08)" stroke="rgba(99,120,255,0.4)" stroke-width="1"/>
+          <text x="430" y="47" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="14" font-weight="600" fill="#a0b0ff">Your App</text>
+          <text x="430" y="67" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" fill="rgba(160,176,255,0.6)">publishes order.placed</text>
+        </g>
+
+        <!-- arrow: app → sns -->
+        <line id="arr-app-sns" x1="430" y1="84" x2="430" y2="126" stroke="rgba(99,120,255,0.3)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="442" y="112" font-family="'JetBrains Mono',monospace" font-size="10" fill="rgba(99,120,255,0.5)">event</text>
+
+        <!-- SNS -->
+        <g class="sv-node" id="node-sns" onclick="showTip('SNS — OrderEvents','Amazon Simple Notification Service is the event bus. It receives one message and fans it out to all 3 SQS queues simultaneously. This is the core of the fan-out pattern — one input, many outputs, all at the same time.')">
+          <rect x="255" y="126" width="350" height="64" rx="10" fill="rgba(0,212,160,0.06)" stroke="rgba(0,212,160,0.35)" stroke-width="1"/>
+          <text x="430" y="153" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="14" font-weight="600" fill="#00d4a0">SNS Topic — OrderEvents</text>
+          <text x="430" y="173" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" fill="rgba(0,212,160,0.55)">fan-out · 3 subscribers · us-east-2</text>
+        </g>
+
+        <!-- arrows: sns → 3 queues -->
+        <line id="arr-sns-p" x1="300" y1="190" x2="130" y2="256" stroke="rgba(255,107,107,0.3)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line id="arr-sns-e" x1="430" y1="190" x2="430" y2="256" stroke="rgba(255,107,107,0.3)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line id="arr-sns-i" x1="560" y1="190" x2="730" y2="256" stroke="rgba(255,107,107,0.3)" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- payment-queue -->
+        <g class="sv-node" id="node-pq" onclick="showTip('payment-queue (SQS)','This SQS queue holds the order event for the payment consumer. If the payment Lambda is slow or down, the message safely waits here — nothing is lost. SQS guarantees at-least-once delivery.')">
+          <rect x="30" y="256" width="200" height="60" rx="10" fill="rgba(255,107,107,0.06)" stroke="rgba(255,107,107,0.35)" stroke-width="1"/>
+          <text x="130" y="281" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="13" font-weight="600" fill="#ff6b6b">payment-queue</text>
+          <text x="130" y="300" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="rgba(255,107,107,0.5)">SQS · Standard</text>
+        </g>
+
+        <!-- email-queue -->
+        <g class="sv-node" id="node-eq" onclick="showTip('email-queue (SQS)','This SQS queue holds the order event for the email consumer. It is completely independent from the payment queue — a slow email send never delays payment processing. That is the beauty of decoupling.')">
+          <rect x="330" y="256" width="200" height="60" rx="10" fill="rgba(255,107,107,0.06)" stroke="rgba(255,107,107,0.35)" stroke-width="1"/>
+          <text x="430" y="281" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="13" font-weight="600" fill="#ff6b6b">email-queue</text>
+          <text x="430" y="300" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="rgba(255,107,107,0.5)">SQS · Standard</text>
+        </g>
+
+        <!-- inventory-queue -->
+        <g class="sv-node" id="node-iq" onclick="showTip('inventory-queue (SQS)','This SQS queue holds the order event for the inventory consumer. Each queue can scale independently — if orders spike, only the queues that are overwhelmed need more Lambda instances behind them.')">
+          <rect x="630" y="256" width="200" height="60" rx="10" fill="rgba(255,107,107,0.06)" stroke="rgba(255,107,107,0.35)" stroke-width="1"/>
+          <text x="730" y="281" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="13" font-weight="600" fill="#ff6b6b">inventory-queue</text>
+          <text x="730" y="300" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="rgba(255,107,107,0.5)">SQS · Standard</text>
+        </g>
+
+        <!-- arrows: queues → lambdas -->
+        <line id="arr-p-lp" x1="130" y1="316" x2="130" y2="356" stroke="rgba(99,120,255,0.3)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line id="arr-e-le" x1="430" y1="316" x2="430" y2="356" stroke="rgba(99,120,255,0.3)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line id="arr-i-li" x1="730" y1="316" x2="730" y2="356" stroke="rgba(99,120,255,0.3)" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- process-payment Lambda -->
+        <g class="sv-node" id="node-lp" onclick="showTip('process-payment (Lambda)','This Lambda function wakes up when a message arrives in payment-queue. It reads the order ID and amount, then processes the charge. In production you would call a payment gateway like Stripe here. No server to manage — AWS runs it automatically.')">
+          <rect x="30" y="356" width="200" height="56" rx="10" fill="rgba(99,120,255,0.06)" stroke="rgba(99,120,255,0.35)" stroke-width="1"/>
+          <text x="130" y="379" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="13" font-weight="600" fill="#a0b0ff">process-payment</text>
+          <text x="130" y="398" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="rgba(160,176,255,0.5)">Lambda · Python 3.12</text>
+        </g>
+
+        <!-- send-email Lambda -->
+        <g class="sv-node" id="node-le" onclick="showTip('send-email (Lambda)','This Lambda function wakes up when a message arrives in email-queue. It reads the customer email and order ID, then sends a confirmation. In production you would use Amazon SES or SendGrid here.')">
+          <rect x="330" y="356" width="200" height="56" rx="10" fill="rgba(99,120,255,0.06)" stroke="rgba(99,120,255,0.35)" stroke-width="1"/>
+          <text x="430" y="379" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="13" font-weight="600" fill="#a0b0ff">send-email</text>
+          <text x="430" y="398" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="rgba(160,176,255,0.5)">Lambda · Python 3.12</text>
+        </g>
+
+        <!-- update-inventory Lambda -->
+        <g class="sv-node" id="node-li" onclick="showTip('update-inventory (Lambda)','This Lambda function wakes up when a message arrives in inventory-queue. It reads the product ID and quantity, then deducts stock. In production you would update a DynamoDB table or RDS database here.')">
+          <rect x="630" y="356" width="200" height="56" rx="10" fill="rgba(99,120,255,0.06)" stroke="rgba(99,120,255,0.35)" stroke-width="1"/>
+          <text x="730" y="379" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="13" font-weight="600" fill="#a0b0ff">update-inventory</text>
+          <text x="730" y="398" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="rgba(160,176,255,0.5)">Lambda · Python 3.12</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-header">
+        <div class="log-title">
+          <div class="dot"></div>
+          Event log
+        </div>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">CloudWatch simulation</span>
+      </div>
+      <div class="log-body" id="log-body">
+        <div class="log-placeholder">Waiting for first order event...</div>
+      </div>
+    </div>
+
+    <div class="resource-section">
+      <div class="section-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Deployed resources · us-east-2
+      </div>
+      <div class="resource-row">
+        <div class="res-icon sns">&#9654;</div>
+        <div class="res-name">OrderEvents</div>
+        <div class="res-type">aws:sns:topic</div>
+        <div class="res-status">active</div>
+      </div>
+      <div class="resource-row">
+        <div class="res-icon sqs">&#9646;</div>
+        <div class="res-name">payment-queue</div>
+        <div class="res-type">aws:sqs:queue · Standard</div>
+        <div class="res-status">active</div>
+      </div>
+      <div class="resource-row">
+        <div class="res-icon sqs">&#9646;</div>
+        <div class="res-name">email-queue</div>
+        <div class="res-type">aws:sqs:queue · Standard</div>
+        <div class="res-status">active</div>
+      </div>
+      <div class="resource-row">
+        <div class="res-icon sqs">&#9646;</div>
+        <div class="res-name">inventory-queue</div>
+        <div class="res-type">aws:sqs:queue · Standard</div>
+        <div class="res-status">active</div>
+      </div>
+      <div class="resource-row">
+        <div class="res-icon lambda">&#955;</div>
+        <div class="res-name">process-payment</div>
+        <div class="res-type">aws:lambda:function · Python 3.12</div>
+        <div class="res-status">active</div>
+      </div>
+      <div class="resource-row">
+        <div class="res-icon lambda">&#955;</div>
+        <div class="res-name">send-email</div>
+        <div class="res-type">aws:lambda:function · Python 3.12</div>
+        <div class="res-status">active</div>
+      </div>
+      <div class="resource-row">
+        <div class="res-icon lambda">&#955;</div>
+        <div class="res-name">update-inventory</div>
+        <div class="res-type">aws:lambda:function · Python 3.12</div>
+        <div class="res-status">active</div>
+      </div>
+      <div class="resource-row">
+        <div class="res-icon iam">&#128274;</div>
+        <div class="res-name">lambda-order-role</div>
+        <div class="res-type">aws:iam:role · SQS + CloudWatch</div>
+        <div class="res-status">active</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    Built with AWS SNS · SQS · Lambda &nbsp;·&nbsp; Region: us-east-2 &nbsp;·&nbsp;
+    <a href="https://aws.amazon.com/event-driven-architecture/" target="_blank">Learn more about EDA</a>
+  </div>
+</footer>
+
+<!-- Tooltip overlay -->
+<div class="tooltip-overlay" id="tooltip" onclick="closeTip(event)">
+  <div class="tooltip-box">
+    <div class="tooltip-title" id="tip-title"></div>
+    <div class="tooltip-body" id="tip-body"></div>
+    <button class="tooltip-close" onclick="document.getElementById('tooltip').classList.remove('show')">Close</button>
+  </div>
+</div>
+
+<script>
+var orderCount = 0;
+var eventCount = 0;
+var firing = false;
+
+var products = ['PROD-001','PROD-042','PROD-117','PROD-305','PROD-218'];
+var emails = ['alice@example.com','bob@example.com','carol@example.com','dave@example.com'];
+
+function showTip(title, body) {
+  document.getElementById('tip-title').textContent = title;
+  document.getElementById('tip-body').textContent = body;
+  document.getElementById('tooltip').classList.add('show');
+}
+function closeTip(e) {
+  if(e.target === document.getElementById('tooltip')) {
+    document.getElementById('tooltip').classList.remove('show');
+  }
+}
+
+function log(msg, type) {
+  var body = document.getElementById('log-body');
+  var ph = body.querySelector('.log-placeholder');
+  if(ph) ph.remove();
+  var d = document.createElement('div');
+  d.className = 'log-entry ' + (type||'');
+  var now = new Date();
+  var t = now.toLocaleTimeString('en-US',{hour12:false});
+  d.innerHTML = '<span class="log-time">'+t+'</span><span class="log-msg">'+msg+'</span>';
+  body.insertBefore(d, body.firstChild);
+}
+
+function setArrow(id, active, color) {
+  var el = document.getElementById(id);
+  if(!el) return;
+  if(active) {
+    el.classList.add('flowing');
+    el.style.stroke = color || 'rgba(0,212,160,0.8)';
+    el.style.strokeWidth = '2';
+  } else {
+    el.classList.remove('flowing');
+    el.style.stroke = el.getAttribute('data-orig') || 'rgba(99,120,255,0.3)';
+    el.style.strokeWidth = '1.5';
+  }
+}
+
+function setNode(id, active) {
+  var el = document.getElementById(id);
+  if(!el) return;
+  if(active) el.classList.add('sv-pulsing');
+  else el.classList.remove('sv-pulsing');
+}
+
+function sleep(ms) { return new Promise(function(r){ setTimeout(r,ms); }); }
+
+async function fireOrder() {
+  if(firing) return;
+  firing = true;
+  document.getElementById('fire-btn').disabled = true;
+  document.getElementById('sys-status').textContent = 'processing';
+  document.getElementById('sys-status').style.color = 'var(--amber)';
+
+  orderCount++;
+  document.getElementById('cnt-orders').textContent = orderCount;
+
+  var orderId = 'ORD-' + String(orderCount).padStart(3,'0');
+  var amount = (Math.round((19.99 + Math.random()*180)*100)/100).toFixed(2);
+  var product = products[Math.floor(Math.random()*products.length)];
+  var email = emails[Math.floor(Math.random()*emails.length)];
+  var qty = Math.floor(Math.random()*4)+1;
+
+  setNode('node-app', true);
+  log('[app] order placed: ' + orderId + ' · $' + amount + ' · ' + product, 'primary');
+  await sleep(400);
+  setNode('node-app', false);
+
+  setArrow('arr-app-sns', true, 'rgba(0,212,160,0.9)');
+  await sleep(500);
+  setArrow('arr-app-sns', false);
+  setNode('node-sns', true);
+  log('[sns] OrderEvents received event — fanning out to 3 queues...', 'info');
+  await sleep(500);
+  setNode('node-sns', false);
+
+  setArrow('arr-sns-p', true, 'rgba(255,107,107,0.9)');
+  setArrow('arr-sns-e', true, 'rgba(255,107,107,0.9)');
+  setArrow('arr-sns-i', true, 'rgba(255,107,107,0.9)');
+  await sleep(500);
+  setArrow('arr-sns-p', false);
+  setArrow('arr-sns-e', false);
+  setArrow('arr-sns-i', false);
+
+  setNode('node-pq', true);
+  setNode('node-eq', true);
+  setNode('node-iq', true);
+  log('[sqs] payment-queue · message enqueued', '');
+  log('[sqs] email-queue · message enqueued', '');
+  log('[sqs] inventory-queue · message enqueued', '');
+  await sleep(600);
+  setNode('node-pq', false);
+  setNode('node-eq', false);
+  setNode('node-iq', false);
+
+  setArrow('arr-p-lp', true, 'rgba(99,120,255,0.9)');
+  setArrow('arr-e-le', true, 'rgba(99,120,255,0.9)');
+  setArrow('arr-i-li', true, 'rgba(99,120,255,0.9)');
+  await sleep(500);
+  setArrow('arr-p-lp', false);
+  setArrow('arr-e-le', false);
+  setArrow('arr-i-li', false);
+
+  setNode('node-lp', true);
+  setNode('node-le', true);
+  setNode('node-li', true);
+
+  await sleep(300);
+  eventCount++; document.getElementById('cnt-events').textContent = eventCount;
+  log('[lambda] process-payment · charging $' + amount + ' for ' + orderId, 'success');
+  await sleep(250);
+  eventCount++; document.getElementById('cnt-events').textContent = eventCount;
+  log('[lambda] send-email · confirmation sent to ' + email, 'success');
+  await sleep(250);
+  eventCount++; document.getElementById('cnt-events').textContent = eventCount;
+  log('[lambda] update-inventory · deducted ' + qty + ' × ' + product, 'success');
+
+  await sleep(800);
+  setNode('node-lp', false);
+  setNode('node-le', false);
+  setNode('node-li', false);
+
+  document.getElementById('sys-status').textContent = 'idle';
+  document.getElementById('sys-status').style.color = 'var(--teal)';
+  document.getElementById('fire-btn').disabled = false;
+  firing = false;
+}
+
+function clearAll() {
+  document.getElementById('log-body').innerHTML = '<div class="log-placeholder">Waiting for first order event...</div>';
+  orderCount = 0; eventCount = 0;
+  document.getElementById('cnt-orders').textContent = '0';
+  document.getElementById('cnt-events').textContent = '0';
+  document.getElementById('sys-status').textContent = 'idle';
+  document.getElementById('sys-status').style.color = 'var(--teal)';
+}
+</script>
+</body>
+</html>

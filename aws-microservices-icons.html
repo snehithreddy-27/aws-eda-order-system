@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AWS Microservices — Icon Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Amazon+Ember:wght@400;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f0f2f5;
+  --bg2:#ffffff;
+  --border:#d1d5db;
+  --aws-dark:#232F3E;
+  --aws-orange:#FF9900;
+  --text:#1a1f2e;
+  --text2:#4b5563;
+  --text3:#9ca3af;
+  --green-border:#1B8A4B;
+  --green-bg:#f0fdf4;
+  --pink:#E7008A;
+  --pink-bg:#fdf2f8;
+  --sans:'Segoe UI',system-ui,sans-serif;
+  --mono:'Source Code Pro',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(209,213,219,0.4) 1px,transparent 1px),linear-gradient(90deg,rgba(209,213,219,0.4) 1px,transparent 1px);background-size:24px 24px;pointer-events:none;z-index:0;}
+
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 20px;}
+
+/* HEADER */
+header{background:var(--aws-dark);padding:12px 0;}
+header .wrap{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.logo{display:flex;align-items:center;gap:10px;}
+.aws-pill{background:var(--aws-orange);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:3px;letter-spacing:0.05em;}
+.logo-text{color:#e2e8f0;font-size:13px;font-weight:600;letter-spacing:0.03em;}
+.hbadges{display:flex;gap:6px;flex-wrap:wrap;}
+.hb{font-size:10px;padding:2px 8px;border-radius:3px;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);font-family:var(--mono);}
+
+/* HERO */
+.hero{padding:32px 0 20px;text-align:center;}
+.hero h1{font-size:clamp(20px,3.5vw,36px);font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;}
+.hero h1 span{color:var(--pink);}
+.hero p{font-size:13px;color:var(--text2);font-family:var(--mono);margin-bottom:20px;}
+
+/* STATS */
+.stats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:4px;}
+.stat{font-family:var(--mono);font-size:11px;padding:4px 12px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);display:flex;align-items:center;gap:6px;}
+.stat .val{font-weight:600;color:var(--aws-dark);}
+.stat .val.pink{color:var(--pink);}
+.stat .val.green{color:var(--green-border);}
+
+/* CONTROLS */
+.controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:20px 0;}
+.btn-main{font-size:13px;font-weight:700;padding:10px 22px;border-radius:5px;border:none;background:var(--pink);color:#fff;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:7px;}
+.btn-main:hover{background:#c4006e;transform:translateY(-1px);}
+.btn-main:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-sec{font-size:12px;padding:9px 16px;border-radius:5px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all 0.15s;}
+.btn-sec:hover{background:#f9fafb;}
+
+/* DIAGRAM CARD */
+.diagram-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px 20px;margin-bottom:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+
+/* SVG animations */
+@keyframes flow{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.flowing{stroke-dasharray:5 3;animation:flow 0.5s linear infinite;}
+.popping{animation:pop 0.6s ease-in-out infinite;}
+
+/* LOG */
+.log-card{background:var(--aws-dark);border-radius:10px;overflow:hidden;margin-bottom:16px;}
+.log-bar{padding:8px 16px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;}
+.log-title{font-family:var(--mono);font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:7px;}
+.dot-live{width:6px;height:6px;border-radius:50%;background:#4ade80;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+.log-body{padding:6px 0;min-height:80px;max-height:160px;overflow-y:auto;}
+.ll{padding:3px 16px;font-family:var(--mono);font-size:11px;color:#475569;display:flex;gap:10px;}
+.lt{color:#334155;min-width:58px;}
+.ls{min-width:110px;}
+.lm{flex:1;}
+.lm.pink{color:#f472b6;}.lm.orange{color:#fb923c;}.lm.blue{color:#818cf8;}.lm.green{color:#4ade80;}.lm.teal{color:#2dd4bf;}.lm.white{color:#cbd5e1;}
+.log-ph{color:#334155;font-style:italic;padding:14px;text-align:center;font-family:var(--mono);font-size:11px;}
+
+/* TOOLTIP */
+.tip-bd{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;}
+.tip-bd.show{display:flex;}
+.tip-box{background:#fff;border:1px solid var(--border);border-radius:12px;padding:22px;max-width:380px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,0.15);}
+.tip-cat{font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;}
+.tip-title{font-size:15px;font-weight:700;margin-bottom:8px;color:var(--text);}
+.tip-body{font-size:12px;color:var(--text2);line-height:1.75;font-family:var(--mono);margin-bottom:14px;}
+.tip-close{font-size:12px;padding:6px 14px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;}
+.tip-close:hover{background:#f9fafb;}
+
+footer{border-top:1px solid var(--border);padding:16px 0;text-align:center;color:var(--text3);font-size:11px;font-family:var(--mono);}
+footer a{color:var(--pink);text-decoration:none;}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp{display:inline-block;animation:spin 0.8s linear infinite;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="logo">
+      <span class="aws-pill">aws</span>
+      <span class="logo-text">Microservices Architecture</span>
+    </div>
+    <div class="hbadges">
+      <span class="hb">API Gateway</span>
+      <span class="hb">Lambda</span>
+      <span class="hb">DynamoDB</span>
+      <span class="hb">EventBridge</span>
+      <span class="hb">SQS</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <section class="hero">
+      <h1>AWS Microservices<br/><span>Event-Driven Architecture</span></h1>
+      <p>// User → API Gateway → 3 microservices (Lambda + DynamoDB) → EventBridge → SQS → Order processing</p>
+      <div class="stats">
+        <div class="stat">Requests <span class="val pink" id="cnt-req">0</span></div>
+        <div class="stat">Events <span class="val green" id="cnt-evt">0</span></div>
+        <div class="stat">Active <span class="val pink" id="active-svc">—</span></div>
+        <div class="stat">Status <span class="val green" id="sys-status">idle</span></div>
+      </div>
+    </section>
+
+    <div class="controls">
+      <button class="btn-main" id="fire-btn" onclick="fireAll()"><span id="fire-icon">&#9654;</span> Simulate full checkout</button>
+      <button class="btn-sec" onclick="fireProduct()">Product only</button>
+      <button class="btn-sec" onclick="fireBasket()">Basket + EventBridge</button>
+      <button class="btn-sec" onclick="resetAll()">Reset</button>
+    </div>
+
+    <div class="diagram-card">
+<svg id="arch" width="100%" viewBox="0 0 980 520" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="marr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<!-- AWS Cloud boundary -->
+<rect x="155" y="14" width="810" height="494" rx="12" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="7 5"/>
+<rect x="162" y="7" width="108" height="18" rx="4" fill="#f0f2f5"/>
+<text x="216" y="20" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="#64748b">AWS Cloud</text>
+
+<!-- CDK label -->
+<rect x="162" y="466" width="148" height="22" rx="4" fill="#fdf4ff" stroke="#d8b4fe" stroke-width="0.5"/>
+<text x="236" y="481" text-anchor="middle" font-family="'Source Code Pro',monospace" font-size="9" fill="#7c3aed">CDK / CloudFormation</text>
+
+<!-- ═══════════════════════════════════ -->
+<!--  USER                              -->
+<!-- ═══════════════════════════════════ -->
+<g id="g-user" style="cursor:pointer" onclick="tip('User','The customer. They visit your website or app and trigger HTTP requests — browse products, manage their cart, place orders.')">
+  <!-- person icon -->
+  <circle cx="68" cy="220" r="18" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+  <circle cx="68" cy="214" r="7" fill="#64748b"/>
+  <path d="M50 238 Q68 224 86 238" fill="#64748b" stroke="none"/>
+  <text x="68" y="252" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="11" font-weight="600" fill="#374151">User</text>
+</g>
+
+<!-- user → gateway arrow -->
+<line id="a-u-gw" x1="90" y1="220" x2="168" y2="220" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#marr)"/>
+
+<!-- ═══════════════════════════════════ -->
+<!--  API GATEWAY                       -->
+<!-- ═══════════════════════════════════ -->
+<g id="g-gw" style="cursor:pointer" onclick="tip('AWS API Gateway','The single front door. Routes /products → Product Lambda, /basket → Basket Lambda, /order → Order Lambda. Handles auth, rate limiting, HTTPS termination — no EC2 needed.')">
+  <!-- API Gateway icon: pink square with code brackets -->
+  <rect x="170" y="184" width="80" height="72" rx="10" fill="#E7008A"/>
+  <rect x="178" y="192" width="64" height="56" rx="7" fill="#c4006e"/>
+  <!-- code bracket symbol -->
+  <text x="210" y="228" text-anchor="middle" font-family="'Source Code Pro',monospace" font-size="22" font-weight="700" fill="#ffffff">&lt;/&gt;</text>
+  <text x="210" y="274" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" font-weight="700" fill="#374151">API Gateway</text>
+</g>
+
+<!-- ═══════════════════════════════════ -->
+<!--  MICROSERVICE CONTAINERS           -->
+<!-- ═══════════════════════════════════ -->
+<!-- Product -->
+<rect x="310" y="24" width="290" height="146" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+<text x="455" y="50" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="13" font-weight="700" fill="#15803d">Product Microservice</text>
+
+<!-- Basket -->
+<rect x="310" y="188" width="290" height="146" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+<text x="455" y="214" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="13" font-weight="700" fill="#15803d">Basket Microservice</text>
+
+<!-- Ordering -->
+<rect x="310" y="352" width="290" height="146" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+<text x="455" y="378" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="13" font-weight="700" fill="#15803d">Ordering Microservice</text>
+
+<!-- ═══════════════════════════════════ -->
+<!--  LAMBDA ICONS                      -->
+<!-- ═══════════════════════════════════ -->
+<!-- Lambda icon builder: orange square + lambda symbol -->
+
+<!-- Product Lambda -->
+<g id="g-lp" style="cursor:pointer" onclick="tip('Product Lambda','Handles GET /products (list catalog) and GET /products/{id}. Reads from products-table in DynamoDB. Completely stateless — scales to thousands of requests automatically.')">
+  <rect x="330" y="64" width="80" height="80" rx="10" fill="#E7711B"/>
+  <rect x="338" y="72" width="64" height="64" rx="7" fill="#bf5e13"/>
+  <text x="370" y="116" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="36" font-weight="300" fill="#ffffff">λ</text>
+  <text x="370" y="162" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" font-weight="600" fill="#374151">AWS Lambda</text>
+</g>
+
+<!-- Basket Lambda -->
+<g id="g-lb" style="cursor:pointer" onclick="tip('Basket Lambda','Handles POST /basket (add item) and POST /basket/checkout. On checkout it publishes a CheckoutEvent to EventBridge — this triggers the entire order flow. Never calls the Order service directly.')">
+  <rect x="330" y="228" width="80" height="80" rx="10" fill="#E7711B"/>
+  <rect x="338" y="236" width="64" height="64" rx="7" fill="#bf5e13"/>
+  <text x="370" y="280" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="36" font-weight="300" fill="#ffffff">λ</text>
+  <text x="370" y="326" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" font-weight="600" fill="#374151">AWS Lambda</text>
+</g>
+
+<!-- Ordering Lambda -->
+<g id="g-lo" style="cursor:pointer" onclick="tip('Ordering Lambda','Triggered by messages arriving in the SQS queue. Saves the confirmed order to orders-table in DynamoDB. Completely decoupled from the Basket service — it has no idea how the order was placed.')">
+  <rect x="330" y="392" width="80" height="80" rx="10" fill="#E7711B"/>
+  <rect x="338" y="400" width="64" height="64" rx="7" fill="#bf5e13"/>
+  <text x="370" y="444" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="36" font-weight="300" fill="#ffffff">λ</text>
+  <text x="370" y="490" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" font-weight="600" fill="#374151">AWS Lambda</text>
+</g>
+
+<!-- Lambda → DynamoDB arrows -->
+<line id="a-lp-dp" x1="410" y1="104" x2="455" y2="104" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#marr)"/>
+<line id="a-lb-db" x1="410" y1="268" x2="455" y2="268" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#marr)"/>
+<line id="a-lo-do" x1="410" y1="432" x2="455" y2="432" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#marr)"/>
+
+<!-- ═══════════════════════════════════ -->
+<!--  DYNAMODB ICONS                    -->
+<!-- ═══════════════════════════════════ -->
+<!-- DynamoDB icon: blue oval/cylinder shape -->
+
+<!-- Products DynamoDB -->
+<g id="g-dp" style="cursor:pointer" onclick="tip('DynamoDB — products-table','NoSQL table storing product catalog: productId (PK), name, price, stock, category. Single-digit millisecond reads. No server to manage. Each microservice owns its own table — the database-per-service pattern.')">
+  <rect x="458" y="64" width="80" height="80" rx="10" fill="#4053D6"/>
+  <rect x="466" y="72" width="64" height="64" rx="7" fill="#2d3ab8"/>
+  <!-- cylinder shape -->
+  <ellipse cx="498" cy="88" rx="22" ry="7" fill="#5c6de0"/>
+  <rect x="476" y="88" width="44" height="32" fill="#4053D6"/>
+  <ellipse cx="498" cy="120" rx="22" ry="7" fill="#2d3ab8"/>
+  <ellipse cx="498" cy="104" rx="22" ry="7" fill="#5c6de0"/>
+  <text x="498" y="162" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" font-weight="600" fill="#374151">AWS DynamoDB</text>
+</g>
+
+<!-- Baskets DynamoDB -->
+<g id="g-db" style="cursor:pointer" onclick="tip('DynamoDB — baskets-table','Stores each users shopping cart: userName (PK), items (list), totalPrice. Cart data lives here until checkout. After the order is placed, the cart is cleared. Separate from the products and orders tables.')">
+  <rect x="458" y="228" width="80" height="80" rx="10" fill="#4053D6"/>
+  <rect x="466" y="236" width="64" height="64" rx="7" fill="#2d3ab8"/>
+  <ellipse cx="498" cy="252" rx="22" ry="7" fill="#5c6de0"/>
+  <rect x="476" y="252" width="44" height="32" fill="#4053D6"/>
+  <ellipse cx="498" cy="284" rx="22" ry="7" fill="#2d3ab8"/>
+  <ellipse cx="498" cy="268" rx="22" ry="7" fill="#5c6de0"/>
+  <text x="498" y="326" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" font-weight="600" fill="#374151">AWS DynamoDB</text>
+</g>
+
+<!-- Orders DynamoDB -->
+<g id="g-do" style="cursor:pointer" onclick="tip('DynamoDB — orders-table','Stores confirmed orders: orderId (PK), userName, items, totalPrice, status, createdAt. Only the Ordering microservice writes here. Orders are never deleted — permanent record of every transaction.')">
+  <rect x="458" y="392" width="80" height="80" rx="10" fill="#4053D6"/>
+  <rect x="466" y="400" width="64" height="64" rx="7" fill="#2d3ab8"/>
+  <ellipse cx="498" cy="416" rx="22" ry="7" fill="#5c6de0"/>
+  <rect x="476" y="416" width="44" height="32" fill="#4053D6"/>
+  <ellipse cx="498" cy="448" rx="22" ry="7" fill="#2d3ab8"/>
+  <ellipse cx="498" cy="432" rx="22" ry="7" fill="#5c6de0"/>
+  <text x="498" y="490" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" font-weight="600" fill="#374151">AWS DynamoDB</text>
+</g>
+
+<!-- GW → microservice arrows -->
+<path id="a-gw-p" d="M250 210 L280 210 L280 97 L328 97" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#marr)"/>
+<text x="268" y="170" text-anchor="middle" font-family="'Source Code Pro',monospace" font-size="9" fill="#94a3b8" font-style="italic">Product</text>
+
+<line id="a-gw-b" x1="250" y1="220" x2="328" y2="268" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#marr)"/>
+<text x="278" y="248" font-family="'Source Code Pro',monospace" font-size="9" fill="#94a3b8" font-style="italic">Basket</text>
+
+<path id="a-gw-o" d="M250 232 L280 232 L280 432 L328 432" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#marr)"/>
+<text x="268" y="320" text-anchor="middle" font-family="'Source Code Pro',monospace" font-size="9" fill="#94a3b8" font-style="italic">Order</text>
+
+<!-- ═══════════════════════════════════ -->
+<!--  CHECKOUT EVENT arrow              -->
+<!-- ═══════════════════════════════════ -->
+<line id="a-b-eb" x1="538" y1="268" x2="660" y2="268" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#marr)"/>
+<text x="597" y="258" text-anchor="middle" font-family="'Source Code Pro',monospace" font-size="9" fill="#64748b">Checkout</text>
+<text x="597" y="270" text-anchor="middle" font-family="'Source Code Pro',monospace" font-size="9" fill="#64748b">Event</text>
+
+<!-- ═══════════════════════════════════ -->
+<!--  EVENTBRIDGE                       -->
+<!-- ═══════════════════════════════════ -->
+<g id="g-eb" style="cursor:pointer" onclick="tip('AWS EventBridge','Advanced event bus. Receives the CheckoutEvent from Basket Lambda. Rules filter and route events: the order rule sends checkout events to SQS, a notification rule could send to SNS, analytics to Kinesis. Far more powerful than SNS alone.')">
+  <!-- EventBridge container -->
+  <rect x="662" y="50" width="148" height="420" rx="10" fill="#fdf2f8" stroke="#E7008A" stroke-width="1.5"/>
+
+  <!-- EventBridge icon at top -->
+  <rect x="696" y="66" width="80" height="72" rx="8" fill="#E7008A"/>
+  <rect x="704" y="74" width="64" height="56" rx="6" fill="#c4006e"/>
+  <!-- bus icon: horizontal lines with nodes -->
+  <circle cx="718" cy="96" r="5" fill="#fff"/>
+  <circle cx="736" cy="96" r="5" fill="#fff"/>
+  <circle cx="754" cy="96" r="5" fill="#fff"/>
+  <line x1="723" y1="96" x2="731" y2="96" stroke="#fff" stroke-width="2"/>
+  <line x1="741" y1="96" x2="749" y2="96" stroke="#fff" stroke-width="2"/>
+  <line x1="718" y1="96" x2="718" y2="110" stroke="#fff" stroke-width="1.5"/>
+  <line x1="736" y1="96" x2="736" y2="110" stroke="#fff" stroke-width="1.5"/>
+  <line x1="754" y1="96" x2="754" y2="110" stroke="#fff" stroke-width="1.5"/>
+  <rect x="712" y="110" width="12" height="8" rx="2" fill="#fff" opacity="0.8"/>
+  <rect x="730" y="110" width="12" height="8" rx="2" fill="#fff" opacity="0.8"/>
+  <rect x="748" y="110" width="12" height="8" rx="2" fill="#fff" opacity="0.8"/>
+
+  <text x="736" y="156" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" font-weight="700" fill="#be185d">AWS</text>
+  <text x="736" y="169" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" font-weight="700" fill="#be185d">EventBridge</text>
+  <text x="736" y="182" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="9" fill="#be185d">Event bus</text>
+
+  <!-- Rule icons (gear-like circles) -->
+  <!-- Rule 1 -->
+  <circle id="eb-r1" cx="736" cy="240" r="22" fill="#fce7f3" stroke="#fca5d0" stroke-width="1"/>
+  <circle cx="736" cy="240" r="12" fill="#f9a8d4"/>
+  <line x1="736" y1="218" x2="736" y2="222" stroke="#be185d" stroke-width="2" stroke-linecap="round"/>
+  <line x1="736" y1="258" x2="736" y2="262" stroke="#be185d" stroke-width="2" stroke-linecap="round"/>
+  <line x1="714" y1="240" x2="718" y2="240" stroke="#be185d" stroke-width="2" stroke-linecap="round"/>
+  <line x1="754" y1="240" x2="758" y2="240" stroke="#be185d" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Rule 2 -->
+  <circle id="eb-r2" cx="736" cy="330" r="22" fill="#fce7f3" stroke="#fca5d0" stroke-width="1"/>
+  <path d="M724 330 L748 330" stroke="#be185d" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M742 323 L748 330 L742 337" fill="none" stroke="#be185d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Rule 3 -->
+  <circle id="eb-r3" cx="736" cy="420" r="22" fill="#fce7f3" stroke="#fca5d0" stroke-width="1"/>
+  <path d="M724 420 L748 420" stroke="#be185d" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M742 413 L748 420 L742 427" fill="none" stroke="#be185d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="736" y="468" text-anchor="middle" font-family="'Source Code Pro',monospace" font-size="9" fill="#be185d">EventBridge</text>
+  <text x="736" y="480" text-anchor="middle" font-family="'Source Code Pro',monospace" font-size="9" fill="#be185d">Rules</text>
+</g>
+
+<!-- EventBridge → SQS arrow -->
+<line id="a-eb-sqs" x1="810" y1="420" x2="856" y2="432" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#marr)"/>
+
+<!-- ═══════════════════════════════════ -->
+<!--  SQS ICON                          -->
+<!-- ═══════════════════════════════════ -->
+<g id="g-sqs" style="cursor:pointer" onclick="tip('AWS SQS Queue','Receives the CheckoutEvent from EventBridge. Holds the message until Ordering Lambda picks it up. If Lambda is busy, messages queue up safely. Guarantees at-least-once delivery — no order is ever lost.')">
+  <rect x="858" y="392" width="80" height="80" rx="10" fill="#E7008A"/>
+  <rect x="866" y="400" width="64" height="64" rx="7" fill="#c4006e"/>
+  <!-- queue lines icon -->
+  <rect x="876" y="415" width="44" height="6" rx="3" fill="#fff" opacity="0.9"/>
+  <rect x="876" y="427" width="44" height="6" rx="3" fill="#fff" opacity="0.7"/>
+  <rect x="876" y="439" width="44" height="6" rx="3" fill="#fff" opacity="0.5"/>
+  <!-- right arrow -->
+  <path d="M900 451 L912 451 M908 447 L912 451 L908 455" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="898" y="490" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" font-weight="600" fill="#374151">AWS SQS</text>
+</g>
+
+<!-- SQS → Order Lambda -->
+<path id="a-sqs-lo" d="M858 432 L600 432 L600 432 L412 432" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#marr)"/>
+
+</svg>
+    </div>
+
+    <!-- LOG PANEL -->
+    <div class="log-card">
+      <div class="log-bar">
+        <div class="log-title"><div class="dot-live" id="dot-live" style="opacity:0.3;animation:none;"></div>event stream</div>
+        <span style="font-family:'Source Code Pro',monospace;font-size:10px;color:#475569;">CloudWatch Logs simulation</span>
+      </div>
+      <div class="log-body" id="log-body">
+        <div class="log-ph">Waiting for request...</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    API Gateway · Lambda · DynamoDB · EventBridge · SQS · CDK &nbsp;·&nbsp;
+    <a href="https://aws.amazon.com/microservices/" target="_blank">AWS microservices docs</a>
+  </div>
+</footer>
+
+<!-- Tooltip -->
+<div class="tip-bd" id="tip-bd" onclick="closeTip(event)">
+  <div class="tip-box">
+    <div class="tip-cat">AWS Service</div>
+    <div class="tip-title" id="tip-t"></div>
+    <div class="tip-body" id="tip-b"></div>
+    <button class="tip-close" onclick="document.getElementById('tip-bd').classList.remove('show')">Close</button>
+  </div>
+</div>
+
+<script>
+var reqCount=0, evtCount=0, firing=false;
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function log(svc,msg,color){
+  var body=document.getElementById('log-body');
+  var ph=body.querySelector('.log-ph');
+  if(ph)ph.remove();
+  var d=document.createElement('div');
+  d.className='ll';
+  var t=new Date().toLocaleTimeString('en-US',{hour12:false});
+  d.innerHTML='<span class="lt">'+t+'</span><span class="ls" style="color:#64748b">['+svc+']</span><span class="lm '+(color||'white')+'">'+msg+'</span>';
+  body.appendChild(d);
+  body.scrollTop=body.scrollHeight;
+}
+
+function arrow(id,on,color){
+  var el=document.getElementById(id);
+  if(!el)return;
+  if(on){el.classList.add('flowing');el.style.stroke=color||'#E7008A';el.style.strokeWidth='2.5';}
+  else{el.classList.remove('flowing');el.style.stroke='#94a3b8';el.style.strokeWidth='1.5';}
+}
+
+function glow(id,on){
+  var el=document.getElementById(id);
+  if(!el)return;
+  if(on)el.classList.add('popping');
+  else el.classList.remove('popping');
+}
+
+function setStatus(txt,color){
+  var el=document.getElementById('sys-status');
+  el.textContent=txt;
+  el.style.color=color||'#16a34a';
+}
+
+function setActive(txt){document.getElementById('active-svc').textContent=txt;}
+
+function startLive(){
+  document.getElementById('dot-live').style.opacity='1';
+  document.getElementById('dot-live').style.animation='blink 1s ease-in-out infinite';
+}
+function stopLive(){
+  document.getElementById('dot-live').style.opacity='0.3';
+  document.getElementById('dot-live').style.animation='none';
+}
+
+async function runGateway(){
+  glow('g-user',true);
+  arrow('a-u-gw',true,'#E7008A');
+  log('user','HTTP request → API Gateway','pink');
+  await sleep(400);
+  glow('g-user',false);
+  arrow('a-u-gw',false);
+  glow('g-gw',true);
+  log('api-gw','routing request to microservices','pink');
+  await sleep(400);
+}
+
+async function runProduct(){
+  setActive('Product');
+  arrow('a-gw-p',true,'#E7711B');
+  await sleep(300);
+  arrow('a-gw-p',false);
+  glow('g-lp',true);
+  log('product-lambda','GET /products · scanning catalog','orange');
+  await sleep(500);
+  arrow('a-lp-dp',true,'#4053D6');
+  await sleep(300);
+  glow('g-dp',true);
+  log('dynamodb','products-table · 18 items returned','blue');
+  evtCount++;document.getElementById('cnt-evt').textContent=evtCount;
+  await sleep(500);
+  arrow('a-lp-dp',false);
+  glow('g-lp',false);glow('g-dp',false);
+  log('product-lambda','200 OK · response returned to user','green');
+}
+
+async function runBasketFlow(){
+  setActive('Basket');
+  arrow('a-gw-b',true,'#E7711B');
+  await sleep(300);
+  arrow('a-gw-b',false);
+  glow('g-lb',true);
+  log('basket-lambda','POST /basket/checkout · processing cart','orange');
+  await sleep(400);
+  arrow('a-lb-db',true,'#4053D6');
+  await sleep(300);
+  glow('g-db',true);
+  log('dynamodb','baskets-table · cart cleared for user','blue');
+  evtCount++;document.getElementById('cnt-evt').textContent=evtCount;
+  await sleep(400);
+  arrow('a-lb-db',false);glow('g-db',false);
+
+  log('basket-lambda','publishing CheckoutEvent to EventBridge...','pink');
+  arrow('a-b-eb',true,'#E7008A');
+  await sleep(600);
+  arrow('a-b-eb',false);glow('g-lb',false);
+
+  glow('g-eb',true);
+  document.getElementById('eb-r1').style.fill='#fce7f3';
+  document.getElementById('eb-r2').style.fill='#E7008A';
+  document.getElementById('eb-r3').style.fill='#E7008A';
+  log('eventbridge','CheckoutEvent received · evaluating rules','pink');
+  await sleep(500);
+  log('eventbridge','rule matched: order-rule → routing to SQS','pink');
+  evtCount++;document.getElementById('cnt-evt').textContent=evtCount;
+  await sleep(400);
+
+  arrow('a-eb-sqs',true,'#E7008A');
+  await sleep(500);
+  arrow('a-eb-sqs',false);
+  document.getElementById('eb-r2').style.fill='#fce7f3';
+  document.getElementById('eb-r3').style.fill='#fce7f3';
+  glow('g-eb',false);
+
+  glow('g-sqs',true);
+  log('sqs','order message enqueued successfully','pink');
+  await sleep(600);
+
+  arrow('a-sqs-lo',true,'#E7711B');
+  await sleep(600);
+  arrow('a-sqs-lo',false);glow('g-sqs',false);
+
+  setActive('Ordering');
+  glow('g-lo',true);
+  log('order-lambda','processing order from SQS queue','orange');
+  await sleep(500);
+  arrow('a-lo-do',true,'#4053D6');
+  await sleep(300);
+  glow('g-do',true);
+  log('dynamodb','orders-table · order saved · status: confirmed','blue');
+  evtCount++;document.getElementById('cnt-evt').textContent=evtCount;
+  await sleep(500);
+  arrow('a-lo-do',false);glow('g-lo',false);glow('g-do',false);
+  log('order-lambda','checkout complete · order confirmed','green');
+}
+
+function lockUI(){
+  firing=true;
+  document.getElementById('fire-btn').disabled=true;
+  document.getElementById('fire-icon').innerHTML='<span class="sp">&#8635;</span>';
+  setStatus('processing','#f59e0b');
+  startLive();
+  reqCount++;document.getElementById('cnt-req').textContent=reqCount;
+}
+
+function unlockUI(){
+  glow('g-gw',false);
+  setStatus('success','#16a34a');
+  setActive('done');
+  stopLive();
+  document.getElementById('fire-btn').disabled=false;
+  document.getElementById('fire-icon').innerHTML='&#9654;';
+  firing=false;
+}
+
+async function fireAll(){
+  if(firing)return;
+  lockUI();
+  await runGateway();
+  await runProduct();
+  await sleep(200);
+  await runBasketFlow();
+  unlockUI();
+}
+
+async function fireProduct(){
+  if(firing)return;
+  lockUI();
+  glow('g-user',true);
+  arrow('a-u-gw',true,'#E7008A');
+  log('user','GET /products','pink');
+  await sleep(400);
+  glow('g-user',false);arrow('a-u-gw',false);
+  glow('g-gw',true);
+  await sleep(300);
+  await runProduct();
+  unlockUI();
+}
+
+async function fireBasket(){
+  if(firing)return;
+  lockUI();
+  glow('g-user',true);
+  arrow('a-u-gw',true,'#E7008A');
+  log('user','POST /basket/checkout','pink');
+  await sleep(400);
+  glow('g-user',false);arrow('a-u-gw',false);
+  glow('g-gw',true);
+  await sleep(300);
+  await runBasketFlow();
+  unlockUI();
+}
+
+function resetAll(){
+  if(firing)return;
+  document.getElementById('log-body').innerHTML='<div class="log-ph">Waiting for request...</div>';
+  reqCount=0;evtCount=0;
+  document.getElementById('cnt-req').textContent='0';
+  document.getElementById('cnt-evt').textContent='0';
+  setActive('—');setStatus('idle','#16a34a');
+  document.getElementById('eb-r1').style.fill='#fce7f3';
+  document.getElementById('eb-r2').style.fill='#fce7f3';
+  document.getElementById('eb-r3').style.fill='#fce7f3';
+}
+
+function tip(title,body){
+  document.getElementById('tip-t').textContent=title;
+  document.getElementById('tip-b').textContent=body;
+  document.getElementById('tip-bd').classList.add('show');
+}
+function closeTip(e){
+  if(e.target===document.getElementById('tip-bd'))
+    document.getElementById('tip-bd').classList.remove('show');
+}
+</script>
+</body>
+</html>
