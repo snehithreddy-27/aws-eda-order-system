@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Place an Order</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #f5f5f0;
+    --card: #ffffff;
+    --border: #e8e8e2;
+    --text: #1a1a1a;
+    --text2: #6b6b6b;
+    --text3: #9b9b9b;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+    --success-text: #15803d;
+    --error-bg: #fef2f2;
+    --error-border: #fecaca;
+    --error-text: #dc2626;
+    --input-bg: #fafaf8;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    background: var(--bg);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  /* subtle texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, #d4d4cc 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .header-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .header-tag::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .header p {
+    font-size: 14px;
+    color: var(--text2);
+  }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  /* FORM */
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+  }
+
+  label span {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 10px 14px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    background: #fff;
+  }
+
+  input::placeholder {
+    color: var(--text3);
+  }
+
+  /* ORDER ID row */
+  .order-id-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .order-id-row input {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: #f0f0ec;
+    color: var(--text2);
+    cursor: default;
+  }
+
+  .refresh-btn {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+
+  .refresh-btn:hover {
+    background: #fff;
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+  }
+
+  /* SUBMIT BUTTON */
+  .submit-btn {
+    width: 100%;
+    padding: 12px 24px;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.01em;
+  }
+
+  .submit-btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+  }
+
+  .submit-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* SPINNER */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  /* SUCCESS / ERROR */
+  .message {
+    display: none;
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .message.show { display: block; }
+
+  .message.success {
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+  }
+
+  .message.error {
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+  }
+
+  .message-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .message.success .message-title { color: var(--success-text); }
+  .message.error .message-title { color: var(--error-text); }
+
+  .message-body {
+    font-size: 12px;
+    font-family: var(--mono);
+    line-height: 1.6;
+  }
+
+  .message.success .message-body { color: #166534; }
+  .message.error .message-body { color: #991b1b; }
+
+  /* ORDER SUMMARY */
+  .summary {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 8px;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    padding: 3px 0;
+  }
+
+  .summary-row .key {
+    color: var(--text2);
+  }
+
+  .summary-row .val {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .summary-row.total {
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+    padding-top: 8px;
+    font-weight: 600;
+  }
+
+  .summary-row.total .val {
+    color: var(--accent);
+    font-size: 13px;
+  }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    margin-top: 20px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+  }
+
+  .footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  @media (max-width: 520px) {
+    .card { padding: 24px 20px; }
+    .header h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-tag">Live on AWS · us-east-2</div>
+    <h1>Place an Order</h1>
+    <p>Connected to your real AWS backend</p>
+  </div>
+
+  <div class="card">
+    <form id="order-form" onsubmit="placeOrder(event)">
+
+      <!-- Order ID -->
+      <div class="form-group">
+        <label>Order ID <span>auto-generated</span></label>
+        <div class="order-id-row">
+          <input type="text" id="order-id" readonly/>
+          <button type="button" class="refresh-btn" onclick="generateOrderId()" title="Generate new ID">&#8635;</button>
+        </div>
+      </div>
+
+      <!-- Product -->
+      <div class="form-group">
+        <label for="product">Product</label>
+        <select id="product" required onchange="updateSummary()">
+          <option value="" disabled selected>Select a product</option>
+          <option value="PROD-001" data-price="29.99">Laptop Stand — $29.99</option>
+          <option value="PROD-002" data-price="49.99">USB Hub Pro — $49.99</option>
+          <option value="PROD-003" data-price="89.99">Mechanical Keyboard — $89.99</option>
+          <option value="PROD-004" data-price="149.99">Monitor Arm — $149.99</option>
+          <option value="PROD-005" data-price="199.99">Webcam 4K — $199.99</option>
+        </select>
+      </div>
+
+      <!-- Quantity -->
+      <div class="form-group">
+        <label for="quantity">Quantity</label>
+        <input type="number" id="quantity" min="1" max="10" value="1" required onchange="updateSummary()"/>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email <span>confirmation sent here</span></label>
+        <input type="email" id="email" placeholder="you@example.com" required/>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="form-group">
+        <label>Order Summary</label>
+        <div class="summary" id="summary">
+          <div class="summary-row">
+            <span class="key">Product</span>
+            <span class="val" id="s-product">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="key">Unit price</span>
+            <span class="val" id="s-price">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="key">Quantity</span>
+            <span class="val" id="s-qty">—</span>
+          </div>
+          <div class="summary-row total">
+            <span class="key">Total</span>
+            <span class="val" id="s-total">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">
+        <span id="btn-text">Place Order</span>
+      </button>
+
+    </form>
+
+    <!-- Success / Error messages -->
+    <div class="message success" id="msg-success">
+      <div class="message-title">✅ Order placed successfully!</div>
+      <div class="message-body" id="msg-success-body"></div>
+    </div>
+
+    <div class="message error" id="msg-error">
+      <div class="message-title">❌ Something went wrong</div>
+      <div class="message-body" id="msg-error-body"></div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    Powered by API Gateway · Lambda · SNS · SQS · DynamoDB &nbsp;·&nbsp;
+    <a href="https://github.com/snehithreddy-27/aws-eda-order-system" target="_blank">GitHub</a>
+  </div>
+
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────
+  // Replace this with your real API Gateway URL
+  var API_URL = 'https://bc4fju0x5f.execute-api.us-east-2.amazonaws.com/Prod/order';
+  // ──────────────────────────────────────────────────────────
+
+  // Generate order ID on load
+  generateOrderId();
+  
+  function generateOrderId() {
+    var num = Math.floor(Math.random() * 9000) + 1000;
+    document.getElementById('order-id').value = 'ORD-' + num;
+  }
+
+  function updateSummary() {
+    var select = document.getElementById('product');
+    var qty = parseInt(document.getElementById('quantity').value) || 1;
+    var option = select.options[select.selectedIndex];
+
+    if (!select.value) {
+      document.getElementById('s-product').textContent = '—';
+      document.getElementById('s-price').textContent = '—';
+      document.getElementById('s-qty').textContent = '—';
+      document.getElementById('s-total').textContent = '—';
+      return;
+    }
+
+    var price = parseFloat(option.getAttribute('data-price'));
+    var name = option.text.split(' — ')[0];
+    var total = (price * qty).toFixed(2);
+
+    document.getElementById('s-product').textContent = name;
+    document.getElementById('s-price').textContent = '$' + price.toFixed(2);
+    document.getElementById('s-qty').textContent = qty;
+    document.getElementById('s-total').textContent = '$' + total;
+  }
+
+  async function placeOrder(e) {
+    e.preventDefault();
+
+    // Hide previous messages
+    document.getElementById('msg-success').classList.remove('show');
+    document.getElementById('msg-error').classList.remove('show');
+
+    // Get values
+    var orderId   = document.getElementById('order-id').value;
+    var productEl = document.getElementById('product');
+    var productId = productEl.value;
+    var productName = productEl.options[productEl.selectedIndex].text.split(' — ')[0];
+    var price     = parseFloat(productEl.options[productEl.selectedIndex].getAttribute('data-price'));
+    var quantity  = parseInt(document.getElementById('quantity').value);
+    var email     = document.getElementById('email').value;
+    var amount    = parseFloat((price * quantity).toFixed(2));
+
+    // Show loading
+    var btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div><span>Placing order...</span>';
+
+    var payload = {
+      orderId: orderId,
+      productId: productId,
+      productName: productName,
+      quantity: quantity,
+      amount: amount,
+      customerEmail: email
+    };
+
+    try {
+      var response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        // Show success
+        document.getElementById('msg-success-body').innerHTML =
+          'Order ID: ' + orderId + '\n' +
+          'Product: ' + productName + '\n' +
+          'Quantity: ' + quantity + '\n' +
+          'Total: $' + amount + '\n' +
+          'Email: ' + email + '\n\n' +
+          'Your order is being processed by AWS Lambda.\nPayment, email and inventory updated automatically.';
+        document.getElementById('msg-success').classList.add('show');
+
+        // Reset form
+        document.getElementById('order-form').reset();
+        generateOrderId();
+        updateSummary();
+      } else {
+        throw new Error('Server returned ' + response.status);
+      }
+    } catch (err) {
+      document.getElementById('msg-error-body').textContent =
+        'Error: ' + err.message + '\n\nMake sure your API Gateway URL is correct and CORS is enabled.';
+      document.getElementById('msg-error').classList.add('show');
+    }
+
+    // Reset button
+    btn.disabled = false;
+    btn.innerHTML = '<span id="btn-text">Place Order</span>';
+  }
+</script>
+</body>
+</html>
