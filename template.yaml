@@ -1,0 +1,193 @@
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+
+  # API Gateway
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: eda-order-api-v2
+      StageName: Prod
+
+  # Order Processor Lambda
+  orderprocessor:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: order-processor-v2
+      CodeUri: src/orderprocessor
+      Handler: handler.handler
+      Runtime: python3.12
+      MemorySize: 256
+      Timeout: 30
+      Environment:
+        Variables:
+          TOPIC_ARN: !Ref OrderEventsTopic
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt OrderEventsTopic.TopicName
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /order
+            Method: post
+
+  # SNS Topic
+  OrderEventsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: OrderEvents-v2
+
+  # SQS Queues
+  PaymentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: payment-queue-v2
+
+  EmailQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: email-queue-v2
+
+  InventoryQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: inventory-queue-v2
+
+  # SNS to SQS Subscriptions
+  PaymentSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref OrderEventsTopic
+      Protocol: sqs
+      Endpoint: !GetAtt PaymentQueue.Arn
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref OrderEventsTopic
+      Protocol: sqs
+      Endpoint: !GetAtt EmailQueue.Arn
+
+  InventorySubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref OrderEventsTopic
+      Protocol: sqs
+      Endpoint: !GetAtt InventoryQueue.Arn
+
+  # SQS Queue Policies
+  PaymentQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref PaymentQueue
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt PaymentQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Ref OrderEventsTopic
+
+  EmailQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref EmailQueue
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt EmailQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Ref OrderEventsTopic
+
+  InventoryQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref InventoryQueue
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt InventoryQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Ref OrderEventsTopic
+
+  # Consumer Lambdas
+  ProcessPayment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: process-payment-v2
+      CodeUri: src/Function
+      Handler: handler.handler
+      Runtime: python3.12
+      MemorySize: 256
+      Timeout: 30
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        PaymentQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt PaymentQueue.Arn
+            BatchSize: 10
+
+  SendEmail:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: send-email-v2
+      CodeUri: src/Function2
+      Handler: handler.handler
+      Runtime: python3.12
+      MemorySize: 256
+      Timeout: 30
+      Events:
+        EmailQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt EmailQueue.Arn
+            BatchSize: 10
+
+  UpdateInventory:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: update-inventory-v2
+      CodeUri: src/Function2
+      Handler: handler.handler
+      Runtime: python3.12
+      MemorySize: 256
+      Timeout: 30
+      Events:
+        InventoryQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt InventoryQueue.Arn
+            BatchSize: 10
+
+  # DynamoDB Table
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: orders-table-v2
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
